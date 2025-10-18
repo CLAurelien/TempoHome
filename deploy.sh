@@ -21,7 +21,6 @@ pip install -r requirements.txt
 git fetch origin
 git reset --hard origin/$BRANCH
 
-# TODO Quand le service sera présent
 sudo systemctl restart tempo.service
 
 echo "✅ Deployment completed successfully on branch $BRANCH!"
