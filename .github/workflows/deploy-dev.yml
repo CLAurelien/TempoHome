@@ -1,0 +1,45 @@
+name: Deploy on Raspberry Pi (Dev)
+
+on:
+  push:
+    branches:
+      - dev
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Test SSH connection to Raspberry Pi
+        id: sshcheck
+        run: |
+          echo "Testing SSH connectivity..."
+          if ssh -o BatchMode=yes -o ConnectTimeout=5 aurel@192.168.1.27 "echo connected"; then
+            echo "SSH OK"
+          else
+            echo "SSH failed"
+            echo "ssh_failed=true" >> $GITHUB_ENV
+          fi
+
+      - name: Notify Discord if SSH failed
+        if: env.ssh_failed == 'true'
+        run: |
+          curl -H "Content-Type: application/json" \
+               -d "{\"content\": \"🚨 TempoHome Dev : impossible de se connecter en SSH au Raspberry Pi.\"}" \
+               ${{ secrets.DISCORD_WEBHOOK }}
+          exit 1
+
+      - name: Deploy code on Raspberry Pi
+        if: env.ssh_failed != 'true'
+        run: |
+          echo "Deploying code on Raspberry Pi..."
+          ssh aurel@192.168.1.27 "cd ~/TempoHome && git pull origin dev && sudo systemctl restart tempo.service"
+
+      - name: Notify Discord success
+        if: success()
+        run: |
+          curl -H "Content-Type: application/json" \
+               -d "{\"content\": \"✅ Déploiement DEV réussi sur le Raspberry Pi !\"}" \
+               ${{ secrets.DISCORD_WEBHOOK }}
