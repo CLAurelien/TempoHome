@@ -8,18 +8,21 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Test SSH connection to Raspberry Pi
         id: sshcheck
+        env:
+          PI_SSH_KEY: ${{ secrets.PI_SSH_KEY }}
         run: |
-          echo "Testing SSH connectivity..."
-          if ssh -o BatchMode=yes -o ConnectTimeout=5 aurel@192.168.1.27 "echo connected"; then
+          echo "$PI_SSH_KEY" > private_key
+          chmod 600 private_key
+          if ssh -i private_key -o BatchMode=yes -o ConnectTimeout=5 -o StrictHostKeyChecking=no aurel@192.168.1.27 "echo connected"; then
             echo "SSH OK"
           else
-            echo "SSH failed"
             echo "ssh_failed=true" >> $GITHUB_ENV
           fi
 
@@ -31,11 +34,34 @@ jobs:
                ${{ secrets.DISCORD_WEBHOOK }}
           exit 1
 
-      - name: Deploy code on Raspberry Pi
+      - name: Test API Healthcheck
         if: env.ssh_failed != 'true'
+        id: apicheck
         run: |
-          echo "Deploying code on Raspberry Pi..."
-          ssh aurel@192.168.1.27 "cd ~/TempoHome && git pull origin dev && sudo systemctl restart tempo.service"
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://192.168.1.27:8000/health || echo 000)
+          echo "API status code: $STATUS"
+          if [[ "$STATUS" =~ ^(200|201|204)$ ]]; then
+            echo "API healthy"
+          else
+            echo "api_unhealthy=true" >> $GITHUB_ENV
+          fi
+
+      - name: Notify Discord if API failed
+        if: env.api_unhealthy == 'true'
+        run: |
+          curl -H "Content-Type: application/json" \
+               -d "{\"content\": \"🚨 TempoHome Dev : l'API du Raspberry Pi ne répond pas (Healthcheck HTTP échoué).\"}" \
+               ${{ secrets.DISCORD_WEBHOOK }}
+          exit 1
+
+      - name: Deploy code on Raspberry Pi using deploy.sh
+        if: env.ssh_failed != 'true' && env.api_unhealthy != 'true'
+        env:
+          PI_SSH_KEY: ${{ secrets.PI_SSH_KEY }}
+        run: |
+          echo "$PI_SSH_KEY" > private_key
+          chmod 600 private_key
+          ssh -i private_key -o StrictHostKeyChecking=no aurel@192.168.1.27 "~/TempoHome/deploy.sh dev"
 
       - name: Notify Discord success
         if: success()

@@ -3,14 +3,25 @@ set -e  # stop on error
 
 cd ~/TempoHome
 
-echo "Pulling latest version..."
-git fetch origin
-git reset --hard origin/main
+BRANCH=${1:-main}  # si aucun argument, default = main
+cd ~/TempoHome
 
-echo "Installing dependencies..."
+# Crée le venv s'il n'existe pas
+if [ ! -d "venv" ]; then
+    echo "Creating virtual environment..."
+    python3 -m venv venv
+fi
+
+source venv/bin/activate
+
+pip install --upgrade pip
+
 pip install -r requirements.txt
 
-#echo "Restarting service..."
+git fetch origin
+git reset --hard origin/$BRANCH
+
+# TODO Quand le service sera présent
 #sudo systemctl restart tempo.service
 
-echo "✅ Deployment completed successfully!"
+echo "✅ Deployment completed successfully on branch $BRANCH!"
