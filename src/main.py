@@ -14,7 +14,7 @@ print("=== Test des LEDs ===")
 print("Chaque LED va s’allumer à tour de rôle...")
 
 try:
-    while True:
+    for i in range(0, 10):
         for nom, led in leds:
             print(f"Allumage : {nom}")
             led.on()
