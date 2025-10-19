@@ -12,18 +12,50 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Test SSH connection to Raspberry Pi
-        id: sshcheck
+#      - name: Test SSH connection to Raspberry Pi
+#        id: sshcheck
+#        env:
+#          PI_SSH_KEY: ${{ secrets.PI_SSH_KEY }}
+#        run: |
+#          echo "$PI_SSH_KEY" > private_key
+#          chmod 600 private_key
+#          if ssh -i private_key -o BatchMode=yes -o ConnectTimeout=5 -o StrictHostKeyChecking=no aurel@192.168.1.27 "echo connected"; then
+#            echo "SSH OK"
+#          else
+#            echo "ssh_failed=true" >> $GITHUB_ENV
+#          fi
+
+      - name: Prepare SSH key
         env:
           PI_SSH_KEY: ${{ secrets.PI_SSH_KEY }}
         run: |
           echo "$PI_SSH_KEY" > private_key
           chmod 600 private_key
-          if ssh -i private_key -o BatchMode=yes -o ConnectTimeout=5 -o StrictHostKeyChecking=no aurel@192.168.1.27 "echo connected"; then
-            echo "SSH OK"
-          else
-            echo "ssh_failed=true" >> $GITHUB_ENV
-          fi
+          echo "✅ SSH key written to private_key"
+
+          - name: Debug SSH connection (verbose)
+            env:
+              PI_SSH_KEY: ${{ secrets.PI_SSH_KEY }}
+            run: |
+              echo "🔍 Testing SSH connection to Raspberry Pi..."
+              set +e
+              ssh -vvv -i private_key -o StrictHostKeyChecking=no -o ConnectTimeout=5 aurel@192.168.1.27 "echo connected" 2>&1 | tee ssh_debug.log
+              EXIT_CODE=${PIPESTATUS[0]}
+              set -e
+              if [ $EXIT_CODE -ne 0 ]; then
+                echo "ssh_failed=true" >> $GITHUB_ENV
+                echo "❌ SSH connection failed."
+              else
+                echo "✅ SSH connection succeeded."
+              fi
+
+          - name: Upload SSH debug log
+            if: env.ssh_failed == 'true'
+            uses: actions/upload-artifact@v4
+            with:
+              name: ssh-debug-log
+              path: ssh_debug.log
+
 
       - name: Notify Discord if SSH failed
         if: env.ssh_failed == 'true'
