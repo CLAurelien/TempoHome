@@ -63,13 +63,13 @@ jobs:
 #          else
 #            echo "api_post_unhealthy=true" >> $GITHUB_ENV
 
-      - name: Notify Discord if post-deploy API failed
+#      - name: Notify Discord if post-deploy API failed
 #        if: env.api_post_unhealthy == 'true'
-        run: |
-          curl -H "Content-Type: application/json" \
-               -d "{\"content\": \"🚨 TempoHome Main : l'API ne répond plus après le déploiement (échec post-deploy).\"}" \
-               ${{ secrets.DISCORD_WEBHOOK }}
-          exit 1
+#        run: |
+#          curl -H "Content-Type: application/json" \
+#               -d "{\"content\": \"🚨 TempoHome Main : l'API ne répond plus après le déploiement (échec post-deploy).\"}" \
+#               ${{ secrets.DISCORD_WEBHOOK }}
+#          exit 1
 
       - name: Notify Discord success
         if: success()
