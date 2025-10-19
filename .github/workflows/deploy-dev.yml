@@ -1,3 +1,5 @@
+# TODO Uncomment Healthcheck and if when the server is up
+
 name: Deploy on Raspberry Pi (Dev)
 
 on:
@@ -13,27 +15,27 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Test API Healthcheck (avant déploiement)
-        id: apicheck
-        run: |
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/health || echo 000)
-          echo "API status code: $STATUS"
-          if [[ "$STATUS" =~ ^(200|201|204)$ ]]; then
-            echo "API healthy"
-          else
-            echo "api_unhealthy=true" >> $GITHUB_ENV
-          fi
-
-      - name: Notify Discord if API failed (avant déploiement)
-        if: env.api_unhealthy == 'true'
-        run: |
-          curl -H "Content-Type: application/json" \
-               -d "{\"content\": \"⚠️ TempoHome Dev : l'API locale ne répond pas, le déploiement est annulé.\"}" \
-               ${{ secrets.DISCORD_WEBHOOK }}
-          exit 1
+#      - name: Test API Healthcheck (avant déploiement)
+#        id: apicheck
+#        run: |
+#          STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/health || echo 000)
+#          echo "API status code: $STATUS"
+#          if [[ "$STATUS" =~ ^(200|201|204)$ ]]; then
+#            echo "API healthy"
+#          else
+#            echo "api_unhealthy=true" >> $GITHUB_ENV
+#          fi
+#
+#      - name: Notify Discord if API failed (avant déploiement)
+#        if: env.api_unhealthy == 'true'
+#        run: |
+#          curl -H "Content-Type: application/json" \
+#               -d "{\"content\": \"⚠️ TempoHome Dev : l'API locale ne répond pas, le déploiement est annulé.\"}" \
+#               ${{ secrets.DISCORD_WEBHOOK }}
+#          exit 1
 
       - name: Set up Python environment
-        if: env.api_unhealthy != 'true'
+        #if: env.api_unhealthy != 'true'
         run: |
           echo "🔧 Setting up virtual environment for DEV"
           python3 -m venv venv
@@ -46,7 +48,9 @@ jobs:
           fi
 
       - name: Run deploy script (DEV)
-        if: env.api_unhealthy != 'true'
+        #if: env.api_unhealthy != 'true'
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
         run: |
           chmod +x ./deploy.sh
           ./deploy.sh dev

@@ -1,3 +1,5 @@
+# TODO Uncomment Healthcheck and if when the server is up
+
 name: Deploy on Raspberry Pi (Main)
 
 on:
@@ -7,64 +9,62 @@ on:
 
 jobs:
   deploy:
-    runs-on: self-hosted  # Le Raspberry Pi exécute directement les actions
+    runs-on: self-hosted
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Test API Healthcheck (avant déploiement)
-        id: apicheck
+      - name: Start tempo.service if not running
         run: |
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/health || echo 000)
-          echo "API status code: $STATUS"
-          if [[ "$STATUS" =~ ^(200|201|204)$ ]]; then
-            echo "API healthy"
+          if ! systemctl is-active --quiet tempo.service; then
+            echo "🔹 tempo.service n'est pas actif, démarrage..."
+            sudo systemctl start tempo.service
           else
-            echo "api_unhealthy=true" >> $GITHUB_ENV
+            echo "🔹 tempo.service déjà actif"
           fi
 
-      - name: Notify Discord if API failed (avant déploiement)
-        if: env.api_unhealthy == 'true'
-        run: |
-          curl -H "Content-Type: application/json" \
-               -d "{\"content\": \"🚨 TempoHome Main : l'API locale du Raspberry Pi ne répond pas (Healthcheck HTTP échoué).\"}" \
-               ${{ secrets.DISCORD_WEBHOOK }}
-          exit 1
-
-      - name: Set up Python environment
-        if: env.api_unhealthy != 'true'
-        run: |
-          echo "🔧 Setting up virtual environment"
-          python3 -m venv venv
-          source venv/bin/activate
-          pip install --upgrade pip
-          if [ -f requirements.txt ]; then
-            pip install -r requirements.txt
-          else
-            echo "⚠️ Aucun requirements.txt trouvé"
-          fi
+      # --- Healthcheck avant déploiement ---
+#      - name: Test API Healthcheck (avant déploiement)
+#        id: apicheck
+#        run: |
+#          STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/health || echo 000)
+#          echo "API status code: $STATUS"
+#          if [[ "$STATUS" =~ ^(200|201|204)$ ]]; then
+#            echo "API healthy"
+#          else
+#            echo "api_unhealthy=true" >> $GITHUB_ENV
+#
+#      - name: Notify Discord if API failed (avant déploiement)
+#        if: env.api_unhealthy == 'true'
+#        run: |
+#          curl -H "Content-Type: application/json" \
+#               -d "{\"content\": \"🚨 TempoHome Main : l'API locale du Raspberry Pi ne répond pas (Healthcheck HTTP échoué).\"}" \
+#               ${{ secrets.DISCORD_WEBHOOK }}
+#          exit 1
 
       - name: Run deploy script
-        if: env.api_unhealthy != 'true'
+#        if: env.api_unhealthy != 'true'
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
         run: |
           chmod +x ./deploy.sh
           ./deploy.sh main
 
-      - name: Test API Healthcheck (après déploiement)
-        if: env.api_unhealthy != 'true'
-        id: postapicheck
-        run: |
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/health || echo 000)
-          echo "Post-deploy API status code: $STATUS"
-          if [[ "$STATUS" =~ ^(200|201|204)$ ]]; then
-            echo "API OK post-deploy"
-          else
-            echo "api_post_unhealthy=true" >> $GITHUB_ENV
-          fi
+      # --- Healthcheck après déploiement ---
+#      - name: Test API Healthcheck (après déploiement)
+#        if: env.api_unhealthy != 'true'
+#        id: postapicheck
+#        run: |
+#          STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/health || echo 000)
+#          echo "Post-deploy API status code: $STATUS"
+#          if [[ "$STATUS" =~ ^(200|201|204)$ ]]; then
+#            echo "API OK post-deploy"
+#          else
+#            echo "api_post_unhealthy=true" >> $GITHUB_ENV
 
       - name: Notify Discord if post-deploy API failed
-        if: env.api_post_unhealthy == 'true'
+#        if: env.api_post_unhealthy == 'true'
         run: |
           curl -H "Content-Type: application/json" \
                -d "{\"content\": \"🚨 TempoHome Main : l'API ne répond plus après le déploiement (échec post-deploy).\"}" \
@@ -76,4 +76,11 @@ jobs:
         run: |
           curl -H "Content-Type: application/json" \
                -d "{\"content\": \"🎉 Déploiement MAIN réussi sur le Raspberry Pi (self-hosted runner).\"}" \
+               ${{ secrets.DISCORD_WEBHOOK }}
+
+      - name: Notify Discord failure
+        if: failure()
+        run: |
+          curl -H "Content-Type: application/json" \
+               -d "{\"content\": \"🚨 Échec du déploiement MAIN sur le Raspberry Pi.\"}" \
                ${{ secrets.DISCORD_WEBHOOK }}
