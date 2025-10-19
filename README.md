@@ -27,3 +27,24 @@ sudo systemctl enable tempo.service
 sudo systemctl start tempo.service
 
 Verif : sudo systemctl status tempo.service
+
+<H1> Pi Runner (Si self-hosted)</H1>
+
+Voir Runner GitHub Action :
+Créer un self-hosted runner
+
+mkdir ~/actions-runner && cd ~/actions-runner
+
+Prendre la dernière version : https://github.com/actions/runner/releases
+
+Version 2.329.0 : curl -L -o actions-runner-linux-arm-2.329.0.tar.gz https://github.com/actions/runner/releases/download/v2.329.0/actions-runner-linux-arm-2.329.0.tar.gz
+
+./config.sh --url https://github.com/CLAurelien/TempoHome --token <TON_TOKEN>
+
+./run.sh
+
+<H3> Démarrage au boot </H3>
+
+sudo ./svc.sh install
+
+sudo ./svc.sh start

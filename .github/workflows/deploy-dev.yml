@@ -7,38 +7,16 @@ on:
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted  # exécuté directement sur ton Raspberry Pi
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Test SSH connection to Raspberry Pi
-        id: sshcheck
-        env:
-          PI_SSH_KEY: ${{ secrets.PI_SSH_KEY }}
-        run: |
-          echo "$PI_SSH_KEY" > private_key
-          chmod 600 private_key
-          if ssh -i private_key -o BatchMode=yes -o ConnectTimeout=5 -o StrictHostKeyChecking=no aurel@192.168.1.27 "echo connected"; then
-            echo "SSH OK"
-          else
-            echo "ssh_failed=true" >> $GITHUB_ENV
-          fi
-
-      - name: Notify Discord if SSH failed
-        if: env.ssh_failed == 'true'
-        run: |
-          curl -H "Content-Type: application/json" \
-               -d "{\"content\": \"🚨 TempoHome Dev : impossible de se connecter en SSH au Raspberry Pi.\"}" \
-               ${{ secrets.DISCORD_WEBHOOK }}
-          exit 1
-
-      - name: Test API Healthcheck
-        if: env.ssh_failed != 'true'
+      - name: Test API Healthcheck (avant déploiement)
         id: apicheck
         run: |
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://192.168.1.27:8000/health || echo 000)
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/health || echo 000)
           echo "API status code: $STATUS"
           if [[ "$STATUS" =~ ^(200|201|204)$ ]]; then
             echo "API healthy"
@@ -46,26 +24,43 @@ jobs:
             echo "api_unhealthy=true" >> $GITHUB_ENV
           fi
 
-      - name: Notify Discord if API failed
+      - name: Notify Discord if API failed (avant déploiement)
         if: env.api_unhealthy == 'true'
         run: |
           curl -H "Content-Type: application/json" \
-               -d "{\"content\": \"🚨 TempoHome Dev : l'API du Raspberry Pi ne répond pas (Healthcheck HTTP échoué).\"}" \
+               -d "{\"content\": \"⚠️ TempoHome Dev : l'API locale ne répond pas, le déploiement est annulé.\"}" \
                ${{ secrets.DISCORD_WEBHOOK }}
           exit 1
 
-      - name: Deploy code on Raspberry Pi using deploy.sh
-        if: env.ssh_failed != 'true' && env.api_unhealthy != 'true'
-        env:
-          PI_SSH_KEY: ${{ secrets.PI_SSH_KEY }}
+      - name: Set up Python environment
+        if: env.api_unhealthy != 'true'
         run: |
-          echo "$PI_SSH_KEY" > private_key
-          chmod 600 private_key
-          ssh -i private_key -o StrictHostKeyChecking=no aurel@192.168.1.27 "~/TempoHome/deploy.sh dev"
+          echo "🔧 Setting up virtual environment for DEV"
+          python3 -m venv venv
+          source venv/bin/activate
+          pip install --upgrade pip
+          if [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+          else
+            echo "⚠️ Aucun requirements.txt trouvé"
+          fi
+
+      - name: Run deploy script (DEV)
+        if: env.api_unhealthy != 'true'
+        run: |
+          chmod +x ./deploy.sh
+          ./deploy.sh dev
 
       - name: Notify Discord success
         if: success()
         run: |
           curl -H "Content-Type: application/json" \
-               -d "{\"content\": \"✅ Déploiement DEV réussi sur le Raspberry Pi !\"}" \
+               -d "{\"content\": \"🧪 Déploiement DEV réussi sur le Raspberry Pi (self-hosted runner).\"}" \
+               ${{ secrets.DISCORD_WEBHOOK }}
+
+      - name: Notify Discord failure
+        if: failure()
+        run: |
+          curl -H "Content-Type: application/json" \
+               -d "{\"content\": \"🚨 Échec du déploiement DEV sur le Raspberry Pi.\"}" \
                ${{ secrets.DISCORD_WEBHOOK }}
