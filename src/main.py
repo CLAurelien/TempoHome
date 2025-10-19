@@ -4,9 +4,9 @@ from gpiozero import LED
 from time import sleep
 
 # Définition des LEDs
-led_bleu = LED(21)
+led_bleu = LED(16)
 led_blanc = LED(20)
-led_rouge = LED(16)
+led_rouge = LED(21)
 
 leds = [("Bleu", led_bleu), ("Blanc", led_blanc), ("Rouge", led_rouge)]
 
