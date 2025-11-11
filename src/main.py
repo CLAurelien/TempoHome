@@ -1,7 +1,10 @@
 # Test Leds
 
-from gpiozero import LED
 from time import sleep
+import requests
+from datetime import datetime, timedelta
+from gpiozero import LED, RGBLED
+import threading, time
 
 # Définition des LEDs
 led_bleu = LED(16)
@@ -10,24 +13,48 @@ led_rouge = LED(21)
 
 leds = [("Bleu", led_bleu), ("Blanc", led_blanc), ("Rouge", led_rouge)]
 
+# # GPIO affectation
+leds_today = {
+    "BLEU": LED(16),
+    "BLANC": LED(20),
+    "ROUGE": LED(21)
+}
+leds_tomorrow = {
+    "BLEU": LED(13),
+    "BLANC": LED(19),
+    "ROUGE": LED(26)
+}
+led_rgb = RGBLED(red=17, green=27, blue=22)
+
+
 print("=== Test des LEDs ===")
 print("Chaque LED va s’allumer à tour de rôle...")
 
 try:
-    for i in range(0, 10):
-        for nom, led in leds:
-            print(f"Allumage : {nom}")
+    for i in range(0, 2):
+        for today, led in leds_today:
             led.on()
             sleep(1)
             led.off()
             sleep(0.5)
-        print("Cycle terminé, on recommence...\n")
+        for tomorrow, led in leds_tomorrow:
+            led.on()
+            sleep(1)
+            led.off()
+            sleep(0.5)
+        for i in range(0, 2):
+            led_rgb.red()
+            sleep(1)
+            led_rgb.green()
+            sleep(1)
+            led_rgb.blue()
+            sleep(1)
+            led_rgb.off()
 except KeyboardInterrupt:
     print("\nArrêt du test.")
 finally:
     for _, led in leds:
         led.off()
-    print("Toutes les LEDs éteintes.")
 
 
 #MAIN
