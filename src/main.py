@@ -38,14 +38,13 @@ try:
         sleep(0.5)
 
     print("Test LED RGB")
-    for _ in range(0, 2):
-        led_rgb.color = (1, 0, 0)  # Rouge
-        sleep(1)
-        led_rgb.color = (0, 1, 0)  # Vert
-        sleep(1)
-        led_rgb.color = (0, 0, 1)  # Bleu
-        sleep(1)
-        led_rgb.off()
+    led_rgb.color = (1, 0, 0)  # Rouge
+    sleep(1)
+    led_rgb.color = (0, 1, 0)  # Vert
+    sleep(1)
+    led_rgb.color = (0, 0, 1)  # Bleu
+    sleep(1)
+    led_rgb.off()
 except KeyboardInterrupt:
     print("\nArrêt du test.")
 finally:
@@ -144,37 +143,50 @@ def save_cached_colors(today, tomorrow):
 
 # === FONCTION APPEL API ===
 def get_tempo_colors():
-    """Récupère les couleurs via l’API ou depuis le cache."""
-    def get_color_from_api(url):
-        try:
-            r = requests.get(url, timeout=10)
-            if r.status_code == 200:
-                data = r.json()
-                code = data.get("codeJour")
-                lib = data.get("libCouleur", "").upper()
-                if code == 0:
-                    return "INCONNU"
-                return lib
-            else:
-                print(f"[WARN] Erreur HTTP {r.status_code} sur {url}")
-                return None
-        except requests.exceptions.RequestException:
-            print(f"[WARN] Problème réseau sur {url}")
-            return None
+    """Ne contacte l’API que si la donnée est manquante ou ancienne."""
+    today, tomorrow = load_cached_colors()
+    today_str = datetime.now().strftime("%Y-%m-%d")
 
-    today = get_color_from_api(API_TODAY)
-    tomorrow = get_color_from_api(API_TOMORROW)
+    # Si on est passé à un nouveau jour → "demain" devient "aujourd'hui"
+    if os.path.exists(CACHE_FILE):
+        with open(CACHE_FILE, "r") as f:
+            data = json.load(f)
+        if data.get("date") != today_str:
+            print("[INFO] Nouveau jour détecté → transfert de la couleur de demain vers aujourd’hui")
+            today = data.get("tomorrow")
+            tomorrow = None  # On devra la redemander plus tard
+            save_cached_colors(today, tomorrow)
 
-    if today or tomorrow:
+    # Si la couleur du jour manque → on la cherche
+    if not today:
+        print("[INFO] Récupération de la couleur d’aujourd’hui depuis l’API")
+        today = get_color_from_api(API_TODAY)
         save_cached_colors(today, tomorrow)
-        return today, tomorrow
 
-    cached_today, cached_tomorrow = load_cached_colors()
-    if cached_today:
-        print("[INFO] Utilisation du cache local.")
-        return cached_today, cached_tomorrow
+    # Si la couleur de demain manque → on la cherche
+    if not tomorrow:
+        print("[INFO] Récupération de la couleur de demain depuis l’API")
+        tomorrow = get_color_from_api(API_TOMORROW)
+        save_cached_colors(today, tomorrow)
 
-    return None, None
+    return today, tomorrow
+
+def get_color_from_api(url):
+    try:
+        r = requests.get(url, timeout=10)
+        if r.status_code == 200:
+            data = r.json()
+            code = data.get("codeJour")
+            lib = data.get("libCouleur", "").upper()
+            if code == 0:
+                return "INCONNU"
+            return lib
+        else:
+            print(f"[WARN] Erreur HTTP {r.status_code} sur {url}")
+            return None
+    except requests.exceptions.RequestException:
+        print(f"[WARN] Problème réseau sur {url}")
+        return None
 
 # === LOGIQUE PRINCIPALE ===
 def update_leds():
@@ -196,6 +208,8 @@ def update_leds():
     else:
         blink_error((0, 0, 1), 3)
 
+    return today, tomorrow
+
 # === PROGRAMME PRINCIPAL ===
 if __name__ == "__main__":
     while True:
@@ -212,9 +226,11 @@ if __name__ == "__main__":
                 time.sleep(30)
             stop_rgb_animation(thread)
 
-        # Mise à jour
-        update_leds()
-        print("[INFO] LEDs mises à jour à", datetime.now().strftime("%H:%M"))
+        today, tomorrow = load_cached_colors()
+        while today is None and tomorrow is None:
+            # Mise à jour
+            today, tomorrow = update_leds()
+            print("[INFO] LEDs mises à jour à", datetime.now().strftime("%H:%M"))
 
-        # Pause 1h avant nouvelle tentative
-        time.sleep(3600)
+            # Pause 1h avant nouvelle tentative
+            time.sleep(3600)
