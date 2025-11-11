@@ -32,29 +32,38 @@ print("Chaque LED va s’allumer à tour de rôle...")
 
 try:
     for i in range(0, 2):
-        for today, led in leds_today:
+        for name, led in leds_today.items():
+            print(f"Jour actuel : {name}")
             led.on()
             sleep(1)
             led.off()
             sleep(0.5)
-        for tomorrow, led in leds_tomorrow:
+
+        for name, led in leds_tomorrow.items():
+            print(f"Demain : {name}")
             led.on()
             sleep(1)
             led.off()
             sleep(0.5)
-        for i in range(0, 2):
-            led_rgb.red()
+
+        print("Test LED RGB")
+        for _ in range(0, 2):
+            led_rgb.color = (1, 0, 0)  # Rouge
             sleep(1)
-            led_rgb.green()
+            led_rgb.color = (0, 1, 0)  # Vert
             sleep(1)
-            led_rgb.blue()
+            led_rgb.color = (0, 0, 1)  # Bleu
             sleep(1)
             led_rgb.off()
 except KeyboardInterrupt:
     print("\nArrêt du test.")
 finally:
-    for _, led in leds:
+    for led in leds_today.values():
         led.off()
+    for led in leds_tomorrow.values():
+        led.off()
+    led_rgb.off()
+    print("Toutes les LEDs éteintes.")
 
 
 #MAIN
