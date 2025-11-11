@@ -221,6 +221,9 @@ if __name__ == "__main__":
                 time.sleep(30)
             stop_rgb_animation(thread)
 
+            today, tomorrow = update_leds()
+            print("[INFO] LEDs mises à jour à", datetime.now().strftime("%H:%M"))
+
         while today is None and tomorrow is None:
             # Mise à jour
             # Pause 1h avant nouvelle tentative
@@ -229,3 +232,4 @@ if __name__ == "__main__":
             today, tomorrow = update_leds()
             print("[INFO] LEDs mises à jour à", datetime.now().strftime("%H:%M"))
 
+        time.sleep(60)
