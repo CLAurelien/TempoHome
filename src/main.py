@@ -7,11 +7,11 @@ from gpiozero import LED, RGBLED
 import threading, time
 
 # Définition des LEDs
-led_bleu = LED(16)
-led_blanc = LED(20)
-led_rouge = LED(21)
-
-leds = [("Bleu", led_bleu), ("Blanc", led_blanc), ("Rouge", led_rouge)]
+# led_bleu = LED(16)
+# led_blanc = LED(20)
+# led_rouge = LED(21)
+#
+# leds = [("Bleu", led_bleu), ("Blanc", led_blanc), ("Rouge", led_rouge)]
 
 # # GPIO affectation
 leds_today = {
