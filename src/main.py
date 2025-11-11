@@ -66,17 +66,10 @@ animation_running = False
 
 
 # === UTILS ===
-def clear_all():
-    for l in leds_today.values():
-        l.off()
-    for l in leds_tomorrow.values():
-        l.off()
-    led_rgb.off()
-
 def set_color_group(group, color):
-    clear_all()
+    for led in group.values():
+        led.off()
     color = color.upper()
-    print(group, color)
     if color in group:
         group[color].on()
 
