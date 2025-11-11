@@ -76,6 +76,7 @@ def clear_all():
 def set_color_group(group, color):
     clear_all()
     color = color.upper()
+    print(group, color)
     if color in group:
         group[color].on()
 
@@ -120,7 +121,6 @@ def blink_error(color, times):
 
 # === CACHE LOCAL ===
 def load_cached_colors():
-    print("4")
     if os.path.exists(CACHE_FILE):
         try:
             with open(CACHE_FILE, "r") as f:
@@ -145,9 +145,7 @@ def save_cached_colors(today, tomorrow):
 # === FONCTION APPEL API ===
 def get_tempo_colors():
     """Ne contacte l’API que si la donnée est manquante ou ancienne."""
-    print("3")
     today, tomorrow = load_cached_colors()
-    print(today, tomorrow)
     today_str = datetime.now().strftime("%Y-%m-%d")
 
     # Si on est passé à un nouveau jour → "demain" devient "aujourd'hui"
@@ -215,9 +213,10 @@ def update_leds():
 
 # === PROGRAMME PRINCIPAL ===
 if __name__ == "__main__":
+    today, tomorrow = update_leds()
+
     while True:
         now = datetime.now()
-        print("1")
         # Animation entre 6h et 11h22
         if 6 <= now.hour < 11 or (now.hour == 11 and now.minute < 22):
             thread = start_rgb_animation()
@@ -229,12 +228,11 @@ if __name__ == "__main__":
                 time.sleep(30)
             stop_rgb_animation(thread)
 
-        today, tomorrow = load_cached_colors()
         while today is None and tomorrow is None:
             # Mise à jour
-            print("2")
+            # Pause 1h avant nouvelle tentative
+            time.sleep(3600)
+
             today, tomorrow = update_leds()
             print("[INFO] LEDs mises à jour à", datetime.now().strftime("%H:%M"))
 
-            # Pause 1h avant nouvelle tentative
-            time.sleep(3600)
