@@ -24,7 +24,7 @@ leds_tomorrow = {
     "BLANC": LED(19),
     "ROUGE": LED(26)
 }
-led_rgb = RGBLED(red=17, green=27, blue=22)
+led_rgb = RGBLED(red=22, green=27, blue=17)
 
 
 print("=== Test des LEDs ===")
