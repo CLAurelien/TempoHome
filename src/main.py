@@ -1,19 +1,12 @@
-# Test Leds
-
 from time import sleep
 import requests
 from datetime import datetime, timedelta
 from gpiozero import LED, RGBLED
 import threading, time
 
-# Définition des LEDs
-# led_bleu = LED(16)
-# led_blanc = LED(20)
-# led_rouge = LED(21)
-#
-# leds = [("Bleu", led_bleu), ("Blanc", led_blanc), ("Rouge", led_rouge)]
+# === TEST DES LEDS ===
 
-# # GPIO affectation
+# GPIO affectation
 leds_today = {
     "BLEU": LED(16),
     "BLANC": LED(20),
@@ -24,37 +17,36 @@ leds_tomorrow = {
     "BLANC": LED(19),
     "ROUGE": LED(26)
 }
-led_rgb = RGBLED(red=22, green=27, blue=17)
-
+led_rgb = RGBLED(red=22, green=27, blue=17, active_high=False)
 
 print("=== Test des LEDs ===")
 print("Chaque LED va s’allumer à tour de rôle...")
 
 try:
-    for i in range(0, 2):
-        for name, led in leds_today.items():
-            print(f"Jour actuel : {name}")
-            led.on()
-            sleep(1)
-            led.off()
-            sleep(0.5)
+    led_rgb.off()
+    for name, led in leds_today.items():
+        print(f"Jour actuel : {name}")
+        led.on()
+        sleep(1)
+        led.off()
+        sleep(0.5)
 
-        for name, led in leds_tomorrow.items():
-            print(f"Demain : {name}")
-            led.on()
-            sleep(1)
-            led.off()
-            sleep(0.5)
+    for name, led in leds_tomorrow.items():
+        print(f"Demain : {name}")
+        led.on()
+        sleep(1)
+        led.off()
+        sleep(0.5)
 
-        print("Test LED RGB")
-        for _ in range(0, 2):
-            led_rgb.color = (1, 0, 0)  # Rouge
-            sleep(1)
-            led_rgb.color = (0, 1, 0)  # Vert
-            sleep(1)
-            led_rgb.color = (0, 0, 1)  # Bleu
-            sleep(1)
-            led_rgb.off()
+    print("Test LED RGB")
+    for _ in range(0, 2):
+        led_rgb.color = (1, 0, 0)  # Rouge
+        sleep(1)
+        led_rgb.color = (0, 1, 0)  # Vert
+        sleep(1)
+        led_rgb.color = (0, 0, 1)  # Bleu
+        sleep(1)
+        led_rgb.off()
 except KeyboardInterrupt:
     print("\nArrêt du test.")
 finally:
