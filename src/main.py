@@ -120,6 +120,8 @@ def load_cached_colors():
                 data = json.load(f)
             if data.get("date") == datetime.now().strftime("%Y-%m-%d"):
                 return data.get("today"), data.get("tomorrow")
+            elif (data.get("date") + timedelta(days=1)) == datetime.now().strftime("%Y-%m-%d"):
+                return data.get("tomorrow"), None
         except Exception:
             pass
     return None, None
@@ -144,12 +146,10 @@ def get_tempo_colors():
     if os.path.exists(CACHE_FILE):
         with open(CACHE_FILE, "r") as f:
             data = json.load(f)
-        if data.get("date") == (datetime.now() + timedelta(days=1)).strftime("%Y-%m-%d"):
+        if (data.get("date") + timedelta(days=1)) == datetime.now().strftime("%Y-%m-%d"):
             print("[INFO] Nouveau jour détecté → transfert de la couleur de demain vers aujourd’hui")
-            today = data.get("tomorrow")
-            tomorrow = None  # On devra la redemander plus tard
             save_cached_colors(today, tomorrow)
-        elif data.get("date") == datetime.now().strftime("%Y-%m-%d") :
+        elif data.get("date") != datetime.now().strftime("%Y-%m-%d") :
             today, tomorrow = None, None
         return today, tomorrow
 
