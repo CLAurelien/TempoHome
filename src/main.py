@@ -1,6 +1,6 @@
 from time import sleep
 import requests, threading, time, json, os
-from datetime import datetime
+from datetime import datetime, timedelta
 from gpiozero import LED, RGBLED
 
 # === TEST DES LEDS ===
@@ -139,17 +139,19 @@ def save_cached_colors(today, tomorrow):
 def get_tempo_colors():
     """Ne contacte l’API que si la donnée est manquante ou ancienne."""
     today, tomorrow = load_cached_colors()
-    today_str = datetime.now().strftime("%Y-%m-%d")
 
     # Si on est passé à un nouveau jour → "demain" devient "aujourd'hui"
     if os.path.exists(CACHE_FILE):
         with open(CACHE_FILE, "r") as f:
             data = json.load(f)
-        if data.get("date") != today_str:
+        if data.get("date") == (datetime.now() + timedelta(days=1)).strftime("%Y-%m-%d"):
             print("[INFO] Nouveau jour détecté → transfert de la couleur de demain vers aujourd’hui")
             today = data.get("tomorrow")
             tomorrow = None  # On devra la redemander plus tard
             save_cached_colors(today, tomorrow)
+        else :
+            today, tomorrow = None, None
+        return today, tomorrow
 
     # Si la couleur du jour manque → on la cherche
     if not today:
@@ -212,13 +214,14 @@ if __name__ == "__main__":
         now = datetime.now()
         # Animation entre 6h et 11h22
         if 6 <= now.hour < 11 or (now.hour == 11 and now.minute < 22):
+            today, tomorrow = update_leds()
             thread = start_rgb_animation()
             print("[INFO] Attente jusqu’à 11h22…")
             while True:
                 now = datetime.now()
                 if now.hour == 11 and now.minute >= 22:
                     break
-                time.sleep(30)
+                time.sleep(60)
             stop_rgb_animation(thread)
 
             today, tomorrow = update_leds()
