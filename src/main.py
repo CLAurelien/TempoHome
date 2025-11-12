@@ -149,7 +149,7 @@ def get_tempo_colors():
             today = data.get("tomorrow")
             tomorrow = None  # On devra la redemander plus tard
             save_cached_colors(today, tomorrow)
-        else :
+        elif data.get("date") == datetime.now().strftime("%Y-%m-%d") :
             today, tomorrow = None, None
         return today, tomorrow
 
