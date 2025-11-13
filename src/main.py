@@ -80,18 +80,23 @@ def smooth_rgb_animation():
     global animation_running
     animation_running = True
     colors = [(1,0,0),(1,1,0),(0,1,0),(0,1,1),(0,0,1),(1,0,1)]
-    while animation_running:
-        for i in range(len(colors)):
-            c1, c2 = colors[i], colors[(i+1)%len(colors)]
-            for t in range(20):
-                if not animation_running:
-                    led_rgb.off()
-                    return
-                r = c1[0] + (c2[0]-c1[0])*t/20
-                g = c1[1] + (c2[1]-c1[1])*t/20
-                b = c1[2] + (c2[2]-c1[2])*t/20
-                led_rgb.color = (r,g,b)
-                time.sleep(0.05)
+    try:
+        while animation_running:
+            for i in range(len(colors)):
+                c1, c2 = colors[i], colors[(i+1)%len(colors)]
+                for t in range(20):
+                    if not animation_running:
+                        led_rgb.off()
+                        return
+                    r = c1[0] + (c2[0]-c1[0])*t/20
+                    g = c1[1] + (c2[1]-c1[1])*t/20
+                    b = c1[2] + (c2[2]-c1[2])*t/20
+                    led_rgb.color = (r,g,b)
+                    time.sleep(0.05)
+    except Exception as e:
+        print(f"[ERREUR] Animation RGB interrompue : {e}")
+        led_rgb.off()
+        animation_running = False
 
 def start_rgb_animation():
     t = threading.Thread(target=smooth_rgb_animation)
@@ -210,29 +215,35 @@ def update_leds():
 if __name__ == "__main__":
     today, tomorrow = update_leds()
 
-    while True:
-        now = datetime.now()
-        # Animation entre 6h et 11h22
-        if 6 <= now.hour < 11 or (now.hour == 11 and now.minute < 22):
-            today, tomorrow = update_leds()
-            thread = start_rgb_animation()
-            print("[INFO] Attente jusqu’à 11h22…")
-            while True:
-                now = datetime.now()
-                if now.hour == 11 and now.minute >= 22:
-                    break
-                time.sleep(60)
-            stop_rgb_animation(thread)
+    try:
+        while True:
+            now = datetime.now()
+            # Animation entre 6h et 11h22
+            if 6 <= now.hour < 11 or (now.hour == 11 and now.minute < 22):
+                try:
+                    today, tomorrow = update_leds()
+                    thread = start_rgb_animation()
+                    print("[INFO] Attente jusqu’à 11h22…")
+                    while True:
+                        now = datetime.now()
+                        if now.hour == 11 and now.minute >= 22:
+                            break
+                        time.sleep(60)
+                    stop_rgb_animation(thread)
 
-            today, tomorrow = update_leds()
-            print("[INFO] LEDs mises à jour à", datetime.now().strftime("%H:%M"))
+                    today, tomorrow = update_leds()
+                    print("[INFO] LEDs mises à jour à", datetime.now().strftime("%H:%M"))
+                except Exception as e:
+                    print(f"[ERREUR] Attente interrompue : {e}")
 
-        while today is None and tomorrow is None:
-            # Mise à jour
-            # Pause 1h avant nouvelle tentative
-            time.sleep(3600)
+            while today is None and tomorrow is None:
+                # Mise à jour
+                # Pause 1h avant nouvelle tentative
+                time.sleep(3600)
 
-            today, tomorrow = update_leds()
-            print("[INFO] LEDs mises à jour à", datetime.now().strftime("%H:%M"))
+                today, tomorrow = update_leds()
+                print("[INFO] LEDs mises à jour à", datetime.now().strftime("%H:%M"))
 
-        time.sleep(60)
+            time.sleep(60)
+    except Exception as e:
+        print(f"[WARN] Erreur while : {e}")
