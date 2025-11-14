@@ -124,11 +124,13 @@ def load_cached_colors():
             with open(CACHE_FILE, "r") as f:
                 data = json.load(f)
             if data.get("date") == datetime.now().strftime("%Y-%m-%d"):
+                print("[INFO] Retour de today et tomorrow du cache")
                 return data.get("today"), data.get("tomorrow")
             elif data.get("date") == (datetime.now() + timedelta(days=-1)).strftime("%Y-%m-%d") and datetime.now().hour > 6:
+                print("[INFO] Nouveau jour détecté → retour de tomorrow à today + tomorrow à None")
                 return data.get("tomorrow"), None
-        except Exception:
-            pass
+        except Exception as el:
+            print(f"[WARN] Impossible de load le cache : {el}")
     return None, None
 
 def save_cached_colors(today, tomorrow):
@@ -139,8 +141,9 @@ def save_cached_colors(today, tomorrow):
                 "today": today,
                 "tomorrow": tomorrow
             }, f)
-    except Exception as e:
-        print(f"[WARN] Impossible de sauvegarder le cache : {e}")
+            print(f"[INFO] Cache saved")
+    except Exception as es:
+        print(f"[WARN] Impossible de sauvegarder le cache : {es}")
 
 # === FONCTION APPEL API ===
 def get_tempo_colors():
@@ -156,7 +159,6 @@ def get_tempo_colors():
             save_cached_colors(today, tomorrow)
         elif data.get("date") != datetime.now().strftime("%Y-%m-%d") :
             today, tomorrow = None, None
-        return today, tomorrow
 
     # Si la couleur du jour manque → on la cherche
     if not today:
@@ -194,7 +196,7 @@ def update_leds():
     today, tomorrow = get_tempo_colors()
 
     # Gestion de la LED du jour
-    if today in leds_today:
+    if today in leds_today or today is None:
         set_color_group(leds_today, today)
     elif today == "INCONNU":
         blink_error((1, 0, 0), 1)
@@ -202,7 +204,7 @@ def update_leds():
         blink_error((1, 0, 0), 3)
 
     # Gestion de la LED du lendemain
-    if tomorrow in leds_tomorrow:
+    if tomorrow in leds_tomorrow or tomorrow is None:
         set_color_group(leds_tomorrow, tomorrow)
     elif tomorrow == "INCONNU":
         blink_error((0, 0, 1), 1)
@@ -242,7 +244,7 @@ if __name__ == "__main__":
                 time.sleep(3600)
 
                 today, tomorrow = update_leds()
-                print("[INFO] LEDs mises à jour à", datetime.now().strftime("%H:%M"))
+                print("[INFO] LEDs mises à jour via API à", datetime.now().strftime("%H:%M"))
 
             time.sleep(60)
     except Exception as e:
