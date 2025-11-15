@@ -161,13 +161,13 @@ def get_tempo_colors():
             today, tomorrow = None, None
 
     # Si la couleur du jour manque → on la cherche
-    if not today:
+    if not today or today == "INCONNU":
         print("[INFO] Récupération de la couleur d’aujourd’hui depuis l’API")
         today = get_color_from_api(API_TODAY)
         save_cached_colors(today, tomorrow)
 
     # Si la couleur de demain manque → on la cherche
-    if not tomorrow:
+    if not tomorrow or tomorrow == "INCONNU":
         print("[INFO] Récupération de la couleur de demain depuis l’API")
         tomorrow = get_color_from_api(API_TOMORROW)
         save_cached_colors(today, tomorrow)
@@ -238,7 +238,7 @@ if __name__ == "__main__":
                 except Exception as e:
                     print(f"[ERREUR] Attente interrompue : {e}")
 
-            while today is None and tomorrow is None:
+            while (today is None and tomorrow is None) or today == "INCONNU" or tomorrow == "INCONNU":
                 # Mise à jour
                 # Pause 1h avant nouvelle tentative
                 time.sleep(3600)
