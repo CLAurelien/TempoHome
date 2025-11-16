@@ -161,13 +161,13 @@ def get_tempo_colors():
             today, tomorrow = None, None
 
     # Si la couleur du jour manque → on la cherche
-    if not today or today == "INCONNU":
+    if (not today or today == "INCONNU") and datetime.now().hour >= 6:
         print("[INFO] Récupération de la couleur d’aujourd’hui depuis l’API")
         today = get_color_from_api(API_TODAY)
         save_cached_colors(today, tomorrow)
 
     # Si la couleur de demain manque → on la cherche
-    if not tomorrow or tomorrow == "INCONNU":
+    if (not tomorrow or tomorrow == "INCONNU") and datetime.now().hour >= 11:
         print("[INFO] Récupération de la couleur de demain depuis l’API")
         tomorrow = get_color_from_api(API_TOMORROW)
         save_cached_colors(today, tomorrow)
@@ -198,18 +198,14 @@ def update_leds():
     # Gestion de la LED du jour
     if today in leds_today or today is None:
         set_color_group(leds_today, today)
-    elif today == "INCONNU":
+    if today == "INCONNU":
         blink_error((1, 0, 0), 1)
-    else:
-        blink_error((1, 0, 0), 3)
 
     # Gestion de la LED du lendemain
     if tomorrow in leds_tomorrow or tomorrow is None:
         set_color_group(leds_tomorrow, tomorrow)
-    elif tomorrow == "INCONNU":
+    if tomorrow == "INCONNU":
         blink_error((0, 0, 1), 1)
-    else:
-        blink_error((0, 0, 1), 3)
 
     return today, tomorrow
 
