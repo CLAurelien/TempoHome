@@ -69,6 +69,8 @@ animation_running = False
 def set_color_group(group, color):
     for led in group.values():
         led.off()
+    if not color:
+        return
     color = color.upper()
     if color in group:
         group[color].on()
