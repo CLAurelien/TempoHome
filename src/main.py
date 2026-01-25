@@ -198,15 +198,15 @@ def update_leds():
     today, tomorrow = get_tempo_colors()
 
     # Gestion de la LED du jour
-    if today in leds_today or today is None:
+    if today in leds_today:
         set_color_group(leds_today, today)
-    if today == "INCONNU":
+    if today == "INCONNU" or today is None:
         blink_error((1, 0, 0), 1)
 
     # Gestion de la LED du lendemain
-    if tomorrow in leds_tomorrow or tomorrow is None:
+    if tomorrow in leds_tomorrow:
         set_color_group(leds_tomorrow, tomorrow)
-    if tomorrow == "INCONNU":
+    if tomorrow == "INCONNU" or tomorrow is None:
         blink_error((0, 0, 1), 1)
 
     return today, tomorrow
