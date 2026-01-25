@@ -7,14 +7,14 @@ from gpiozero import LED, RGBLED
 
 # GPIO affectation
 leds_today = {
-    "BLEU": LED(16),
-    "BLANC": LED(20),
-    "ROUGE": LED(21)
-}
-leds_tomorrow = {
     "BLEU": LED(13),
     "BLANC": LED(19),
     "ROUGE": LED(26)
+}
+leds_tomorrow = {
+    "BLEU": LED(16),
+    "BLANC": LED(20),
+    "ROUGE": LED(21)
 }
 led_rgb = RGBLED(red=22, green=27, blue=17, active_high=False)
 
