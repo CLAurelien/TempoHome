@@ -1,7 +1,7 @@
 from time import sleep
 import requests, threading, time, json, os
 from datetime import datetime, timedelta
-from gpiozero import LED, RGBLED
+from gpiozero import LED, RGBLED, Button
 
 # === TEST DES LEDS ===
 
@@ -17,6 +17,36 @@ leds_tomorrow = {
     "ROUGE": LED(21)
 }
 led_rgb = RGBLED(red=22, green=27, blue=17, active_high=False)
+
+# === BOUTON SYSTEME ===
+button = Button(3, pull_up=True, bounce_time=0.5, hold_time=3)
+
+def reboot_pi():
+    print("[SYSTEM] Reboot demandé")
+
+    # Feedback LED (orange)
+    for _ in range(3):
+        led_rgb.color = (1, 0.5, 0)
+        sleep(0.2)
+        led_rgb.off()
+        sleep(0.2)
+
+    os.system("sudo systemctl reboot")
+
+def shutdown_pi():
+    print("[SYSTEM] Shutdown demandé")
+
+    # Feedback LED (rouge)
+    for _ in range(5):
+        led_rgb.color = (1, 0, 0)
+        sleep(0.2)
+        led_rgb.off()
+        sleep(0.2)
+
+    os.system("sudo systemctl poweroff")
+
+button.when_pressed = reboot_pi
+button.when_held = shutdown_pi
 
 print("=== Test des LEDs ===")
 print("Chaque LED va s’allumer à tour de rôle...")
